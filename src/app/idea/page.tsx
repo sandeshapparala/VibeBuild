@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import IdeaForm from "@/components/forms/IdeaForm";
 import IdeaCard from "@/components/idea/IdeaCard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter } from "next/navigation";
 
 export default function IdeaPage() {
   const { user, loading } = useAuth();
   const [activeIdeaId, setActiveIdeaId] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const [showResults, setShowResults] = useState(false);
   const router = useRouter();
 
   // Get the auth token when the user is available
@@ -30,37 +30,45 @@ export default function IdeaPage() {
   }, [user]);
 
   // Redirect if not logged in
-  if (!loading && !user) {
-    router.push("/signin");
-    return null;
-  }
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/signin");
+    }
+  }, [loading, user, router]);
 
   const handleIdeaSubmitted = (ideaId: string) => {
     setActiveIdeaId(ideaId);
+    setShowResults(true);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container py-12">
-      <h1 className="text-3xl font-bold mb-6">App Idea Generator</h1>
-      
-      <Tabs defaultValue="submit" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="submit">Submit Idea</TabsTrigger>
-          {activeIdeaId && (
-            <TabsTrigger value="result">Analysis Result</TabsTrigger>
-          )}
-        </TabsList>
-        
-        <TabsContent value="submit">
+    <div className="min-h-screen bg-black text-white">
+      {!showResults ? (
+        <div className="container mx-auto px-4 py-8">
           <IdeaForm onIdeaSubmitted={handleIdeaSubmitted} authToken={authToken} />
-        </TabsContent>
-        
-        {activeIdeaId && (
-          <TabsContent value="result">
-            <IdeaCard ideaId={activeIdeaId} />
-          </TabsContent>
-        )}
-      </Tabs>
+        </div>
+      ) : (
+        <div className="container mx-auto px-4 py-8">
+          <button 
+            onClick={() => setShowResults(false)}
+            className="mb-8 text-blue-400 hover:text-blue-300 flex items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+            Back to idea submission
+          </button>
+          {activeIdeaId && <IdeaCard ideaId={activeIdeaId} />}
+        </div>
+      )}
     </div>
   );
 }
